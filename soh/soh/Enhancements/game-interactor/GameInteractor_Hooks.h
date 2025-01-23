@@ -62,6 +62,8 @@ void GameInteractor_ExecuteOnUpdateFileQuestSelection(uint8_t questIndex);
 void GameInteractor_ExecuteOnUpdateFileBossRushOptionSelection(uint8_t optionIndex, uint8_t optionValue);
 void GameInteractor_ExecuteOnUpdateFileNameSelection(int16_t charCode);
 
+
+
 // MARK: - Game
 void GameInteractor_ExecuteOnSetGameLanguage();
 
@@ -70,6 +72,10 @@ void GameInteractor_RegisterOnAssetAltChange(void (*fn)(void));
 
 //Mark: - Pause Menu
 void GameInteractor_ExecuteOnKaleidoUpdate();
+
+//gnounc - OnInput
+void GameInteractor_ExecuteOnInput(void* padMgr);
+
 
 #ifdef __cplusplus
 }

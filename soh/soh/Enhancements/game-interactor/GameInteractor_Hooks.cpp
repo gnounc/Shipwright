@@ -255,3 +255,9 @@ void GameInteractor_RegisterOnAssetAltChange(void (*fn)(void)) {
 void GameInteractor_ExecuteOnKaleidoUpdate() {
     GameInteractor::Instance->ExecuteHooks<GameInteractor::OnKaleidoUpdate>();
 }
+
+//gnounc: OnInput
+
+void GameInteractor_ExecuteOnInput(void* padMgr) {
+    GameInteractor::Instance->ExecuteHooks<GameInteractor::OnInput>(padMgr);
+}

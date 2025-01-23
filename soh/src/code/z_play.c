@@ -699,6 +699,8 @@ void Play_Update(PlayState* play) {
     s32 isPaused;
     s32 pad1;
 
+    GameInteractor_ExecuteOnInput(input);
+
     if ((SREG(1) < 0) || (DREG(0) != 0)) {
         SREG(1) = 0;
         ZeldaArena_Display();
