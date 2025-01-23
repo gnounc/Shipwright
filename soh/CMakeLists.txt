@@ -210,7 +210,7 @@ set(ALL_FILES
     ${soh__}
     ${soh__Extractor}
     ${src__}
-)
+        soh/Enhancements/Cheats/gnounc/QuickInventory.cpp)
 
 ################################################################################
 # Target
