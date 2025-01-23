@@ -23,6 +23,69 @@ extern SaveContext gSaveContext;
 #define CVAR_QUICK_INVENTORY_VALUE CVarGetInteger(CVAR_QUICK_INVENTORY_NAME, CVAR_QUICK_INVENTORY_DEFAULT)
 
 
+
+void QI_handleInput(Input* input) {
+    //filter out items we dont own, then map slots to item numbers.
+    auto ownedItems = qi_inv.inventories[gSaveContext.linkAge][qi_inv.cursor].slots | std::views::filter([](u16 f_slot) { return gSaveContext.inventory.items[f_slot] != ITEM_NONE; }) | std::views::transform([](u16 f_slot) { return gSaveContext.inventory.items[f_slot]; });
+    std::vector<int> ownedItemsCopy(ownedItems.begin(), ownedItems.end());  //hack because compiler wouldnt accept ownedItems.size()
+
+//dpad to nav menu
+    if (CHECK_BTN_ALL(input->press.button, BTN_DUP)) {
+        qi_inv.cursor = qi_inv.cursor - 1;
+        qi_inv.cursor = std::clamp(qi_inv.cursor, 0, (int)qi_inv.inventories[gSaveContext.linkAge].size() -1);
+    }
+
+    if (CHECK_BTN_ALL(input->press.button, BTN_DDOWN)) {
+        qi_inv.cursor = qi_inv.cursor + 1;
+        qi_inv.cursor = std::clamp(qi_inv.cursor, 0, (int)qi_inv.inventories[gSaveContext.linkAge].size() -1);
+    }
+
+    if (CHECK_BTN_ALL(input->press.button, BTN_DLEFT)) {
+        qi_inv.inventories[gSaveContext.linkAge][qi_inv.cursor].cursor = qi_inv.inventories[gSaveContext.linkAge][qi_inv.cursor].cursor - 1;
+        qi_inv.inventories[gSaveContext.linkAge][qi_inv.cursor].cursor = std::clamp(qi_inv.inventories[gSaveContext.linkAge][qi_inv.cursor].cursor, 0, (int)ownedItemsCopy.size() -1);
+    }
+
+    if (CHECK_BTN_ALL(input->press.button, BTN_DRIGHT)) {
+        qi_inv.inventories[gSaveContext.linkAge][qi_inv.cursor].cursor = qi_inv.inventories[gSaveContext.linkAge][qi_inv.cursor].cursor + 1;
+        qi_inv.inventories[gSaveContext.linkAge][qi_inv.cursor].cursor = std::clamp(qi_inv.inventories[gSaveContext.linkAge][qi_inv.cursor].cursor, 0, (int)ownedItemsCopy.size() -1);
+    }
+
+
+
+    u16 selected_slot = qi_inv.inventories[gSaveContext.linkAge][qi_inv.cursor].slots[qi_inv.inventories[gSaveContext.linkAge][qi_inv.cursor].cursor];
+    u16 selected_item = gSaveContext.inventory.items[selected_slot];
+
+//cpad to equip items
+    if (CHECK_BTN_ALL(input->press.button, BTN_CLEFT)) {
+        gSaveContext.equips.buttonItems[1] = selected_item;
+        gSaveContext.equips.cButtonSlots[BTN_CLEFT] = selected_slot;
+    }
+
+    if (CHECK_BTN_ALL(input->press.button, BTN_CRIGHT)) {
+        gSaveContext.equips.buttonItems[3] = selected_item;
+        gSaveContext.equips.cButtonSlots[BTN_CRIGHT] = selected_slot;
+    }
+
+    if (CHECK_BTN_ALL(input->press.button, BTN_CDOWN)) {
+        gSaveContext.equips.buttonItems[2] = selected_item;
+        gSaveContext.equips.cButtonSlots[BTN_CDOWN] = selected_slot;
+    }
+
+
+    //z_en_partner.c
+//    void UseOcarina(Actor* thisx, PlayState* play, u8 started) {
+
+
+//put item in hand
+    if (CHECK_BTN_ALL(input->press.button, BTN_A)) {
+        Player* player = GET_PLAYER(gPlayState);
+//        Player_UseItem(gPlayState, player, selected_item);
+    }
+
+    //clear input so we dont perform actions when we hit cpad buttons to equip.
+    PadUtils_ResetPressRel(input);
+}
+
 void QI_Draw() {
 
     int spacer = 4;
@@ -45,6 +108,7 @@ void QI_Draw() {
     gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 255, 128);
     gDPSetEnvColor(OVERLAY_DISP++, 255, 255, 255, 0);
     gDPSetBlendColor(OVERLAY_DISP++, 255, 255, 255, 0);
+
 
     int idx = 0;    //draw header outlines
     for(auto &category : qi_inv.inventories[gSaveContext.linkAge]) {
@@ -109,6 +173,7 @@ void QI_Draw() {
 
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
+
 }
 
 void OnQuickInventory(void* arg_input) {
@@ -123,6 +188,7 @@ void OnQuickInventory(void* arg_input) {
 
 
     if (CHECK_BTN_ALL(input->cur.button, BTN_Z)) {
+        QI_handleInput(input);
         QI_Draw();
     }
 
