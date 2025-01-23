@@ -24,6 +24,54 @@ extern SaveContext gSaveContext;
 
 
 
+void QI_hotswapDpad(Player* player) {
+
+//default dpad to bottles. stomp over this if bow or ocarina is equipped
+
+    gSaveContext.equips.buttonItems[4] = gSaveContext.inventory.items[SLOT_BOTTLE_1];
+    gSaveContext.equips.cButtonSlots[BTN_DUP] = SLOT_BOTTLE_1;
+
+    gSaveContext.equips.buttonItems[5] = gSaveContext.inventory.items[SLOT_BOTTLE_2];
+    gSaveContext.equips.cButtonSlots[BTN_DDOWN] = SLOT_BOTTLE_2;
+
+    gSaveContext.equips.buttonItems[6] = gSaveContext.inventory.items[SLOT_BOTTLE_3];
+    gSaveContext.equips.cButtonSlots[BTN_DLEFT] = SLOT_BOTTLE_3;
+
+    gSaveContext.equips.buttonItems[7] = gSaveContext.inventory.items[SLOT_BOTTLE_4];
+    gSaveContext.equips.cButtonSlots[BTN_DRIGHT] = SLOT_BOTTLE_4;
+
+
+
+    if (Player_HoldsBow(player)) {
+        gSaveContext.equips.buttonItems[4] = gSaveContext.inventory.items[SLOT_BOW];
+        gSaveContext.equips.cButtonSlots[BTN_DUP] = SLOT_BOW;
+
+        gSaveContext.equips.buttonItems[5] = gSaveContext.inventory.items[SLOT_ARROW_LIGHT];
+        gSaveContext.equips.cButtonSlots[BTN_DDOWN] = SLOT_ARROW_LIGHT;
+
+        gSaveContext.equips.buttonItems[6] = gSaveContext.inventory.items[SLOT_ARROW_ICE];
+        gSaveContext.equips.cButtonSlots[BTN_DLEFT] = SLOT_ARROW_ICE;
+
+        gSaveContext.equips.buttonItems[7] = gSaveContext.inventory.items[SLOT_ARROW_FIRE];
+        gSaveContext.equips.cButtonSlots[BTN_DRIGHT] = SLOT_ARROW_FIRE;
+    }
+
+    //this wont work without more modifications, because actions cannot be taken while the ocarina is out.
+    if (player->heldItemAction == ITEM_OCARINA_FAIRY || player->heldItemAction == ITEM_OCARINA_TIME) {
+        gSaveContext.equips.buttonItems[4] = ITEM_SONG_LULLABY;
+        gSaveContext.equips.cButtonSlots[BTN_DUP] = gItemSlots[ITEM_SONG_LULLABY];
+
+        gSaveContext.equips.buttonItems[5] = ITEM_SONG_TIME;
+        gSaveContext.equips.cButtonSlots[BTN_DDOWN] = gItemSlots[ITEM_SONG_TIME];
+
+        gSaveContext.equips.buttonItems[6] = ITEM_SONG_STORMS;
+        gSaveContext.equips.cButtonSlots[BTN_DLEFT] = gItemSlots[ITEM_SONG_STORMS];
+
+        gSaveContext.equips.buttonItems[7] = ITEM_SONG_SUN;
+        gSaveContext.equips.cButtonSlots[BTN_DRIGHT] = gItemSlots[ITEM_SONG_SUN];
+    }
+}
+
 void QI_handleInput(Input* input) {
     //filter out items we dont own, then map slots to item numbers.
     auto ownedItems = qi_inv.inventories[gSaveContext.linkAge][qi_inv.cursor].slots | std::views::filter([](u16 f_slot) { return gSaveContext.inventory.items[f_slot] != ITEM_NONE; }) | std::views::transform([](u16 f_slot) { return gSaveContext.inventory.items[f_slot]; });
@@ -100,10 +148,9 @@ void QI_Draw() {
 
     OPEN_DISPS(gPlayState->state.gfxCtx);
 
-    Gfx_SetupDL_39Overlay(gPlayState->state.gfxCtx);
+        Gfx_SetupDL_39Overlay(gPlayState->state.gfxCtx);
 
 //set render flags to draw headers outlines
-
     gDPSetCombineLERP(OVERLAY_DISP++, 0, 0, 0, PRIMITIVE, 0, 0, 0, TEXEL0, 0, 0, 0, PRIMITIVE, 0, 0, 0, TEXEL0);
     gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 255, 128);
     gDPSetEnvColor(OVERLAY_DISP++, 255, 255, 255, 0);
@@ -171,9 +218,7 @@ void QI_Draw() {
         idx++;
     }
 
-
     CLOSE_DISPS(gPlayState->state.gfxCtx);
-
 }
 
 void OnQuickInventory(void* arg_input) {
@@ -186,12 +231,12 @@ void OnQuickInventory(void* arg_input) {
     Input *input = (Input*)arg_input;
 
 
+//    QI_hotswapDpad(player);
 
     if (CHECK_BTN_ALL(input->cur.button, BTN_Z)) {
         QI_handleInput(input);
         QI_Draw();
     }
-
 }
 
 void RegisterQuickInventory() {
