@@ -73,9 +73,9 @@ void GameInteractor_RegisterOnAssetAltChange(void (*fn)(void));
 //Mark: - Pause Menu
 void GameInteractor_ExecuteOnKaleidoUpdate();
 
-//gnounc - OnInput
+//gnounc - hooks
 void GameInteractor_ExecuteOnInput(void* padMgr);
-
+void GameInteractor_ExecuteOnZTargetingUpdate(void* player, void* oldTarget, void* newTarget);
 
 #ifdef __cplusplus
 }

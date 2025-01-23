@@ -3779,6 +3779,9 @@ void Player_UpdateZTargeting(Player* this, PlayState* play) {
     s32 usingHoldTargeting;
     s32 isTalking;
 
+    //gnounc - ZTargeting hook
+    Actor* oldTarget = this->focusActor;
+
     if (!zButtonHeld) {
         this->stateFlags1 &= ~PLAYER_STATE1_LOCK_ON_FORCED_TO_RELEASE;
     }
@@ -3852,7 +3855,6 @@ void Player_UpdateZTargeting(Player* this, PlayState* play) {
 
                     if (nextLockOnActor != this->focusActor) {
                         // Set new lock-on
-
                         if (!usingHoldTargeting) {
                             this->stateFlags2 |= PLAYER_STATE2_LOCK_ON_WITH_SWITCH;
                         }
@@ -3913,6 +3915,11 @@ void Player_UpdateZTargeting(Player* this, PlayState* play) {
         }
     } else {
         Player_ClearZTargeting(this);
+    }
+
+    //gnounc - ZTargeting hook
+    if(oldTarget != this->focusActor) {
+        GameInteractor_ExecuteOnZTargetingUpdate(this, oldTarget, this->focusActor);
     }
 }
 

@@ -261,3 +261,8 @@ void GameInteractor_ExecuteOnKaleidoUpdate() {
 void GameInteractor_ExecuteOnInput(void* padMgr) {
     GameInteractor::Instance->ExecuteHooks<GameInteractor::OnInput>(padMgr);
 }
+
+//Player* player, Actor* oldTarget, Actor* newTarget
+void GameInteractor_ExecuteOnZTargetingUpdate(void* player, void* oldTarget, void* newTarget) {
+    GameInteractor::Instance->ExecuteHooks<GameInteractor::OnZTargetingUpdate>(player, oldTarget, newTarget);
+}

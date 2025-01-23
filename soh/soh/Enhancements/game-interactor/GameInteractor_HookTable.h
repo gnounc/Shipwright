@@ -64,3 +64,4 @@ DEFINE_HOOK(OnKaleidoUpdate, ());
 
 //gnounc
 DEFINE_HOOK(OnInput, (void* padMgr));
+DEFINE_HOOK(OnZTargetingUpdate, (void* player, void* oldTarget, void* newTarget));
