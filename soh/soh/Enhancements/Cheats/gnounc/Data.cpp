@@ -9,6 +9,7 @@
 #include "soh/Enhancements/randomizer/randomizerTypes.h"
 #include "libultraship/libultra/types.h"
 #include "StringHelper.h"
+#include <nlohmann/json.hpp>
 #include "Context.h"
 #include <spdlog/spdlog.h>
 
@@ -22,8 +23,35 @@ extern SaveContext gSaveContext;
 
 //SPDLOG_INFO("blah blah {}", 0);
 
+using json = nlohmann::json;
+
+
 static std::vector<u16> bottle_ids = {SLOT_BOTTLE_1, SLOT_BOTTLE_2, SLOT_BOTTLE_3, SLOT_BOTTLE_4};
 
+
+//also theres a bug i havent found yet, adult link is showing a deku stick when his inventory says it should be a deku nut
+//actually *many* of the icons for adult link are wrong.
+//and stick/nut are transposed for child. so i'm probably not indexing things correctly in the draw loop?
+
+struct QuickCategory {
+    int cursor;
+    std::string name;
+    u16 header;
+    std::vector<int> slots;
+
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(QuickCategory, cursor, name, header, slots)
+};
+
+
+struct QuickInventory {
+    int cursor;
+    std::vector<std::vector<QuickCategory>> inventories;
+
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(QuickCategory, cursor, name, header, slots)
+};
+
+
+static void saveDefaultInventoryJson();
 
 static std::map<std::string, int> slot_enums = {
         {"SLOT_STICK", SLOT_STICK},
@@ -228,3 +256,78 @@ static s8 sItemActions[] = {
         PLAYER_IA_SWORD_MASTER,        // ITEM_SWORD_MASTER
         PLAYER_IA_SWORD_BIGGORON,      // ITEM_SWORD_BIGGORON
 };
+
+
+//TODO: move slot_nums back to item_id's in inventory drawing code?
+//TODO: save default json inventory if it does not exist
+
+static QuickInventory ParseInventoryJson(nlohmann::json qInventory) {
+    QuickInventory ret_inv = {0, {}};
+
+    for (const auto& inv : qInventory["inventories"].items()) {
+
+        std::vector<QuickCategory> tmp_cats = {};
+        for (const auto& cat : inv.value()["categories"].items()) {
+            QuickCategory tmp_cat;
+
+            tmp_cat.cursor = cat.value()["cursor"].get<int>();
+            tmp_cat.name = cat.value()["name"].get<std::string>();
+            tmp_cat.header = item_enums[cat.value()["header"].get<std::string>()].second[0];
+
+
+            //map slot strings to slot ids
+            auto view_tmp_slots = cat.value()["slots"].get<std::vector<std::string>>() | std::views::transform([](std::string s_slot) { return slot_enums[s_slot]; });
+            for (const auto& it_tmp_cat : view_tmp_slots) {
+                tmp_cat.slots.push_back(it_tmp_cat);
+            }
+
+            tmp_cats.push_back(tmp_cat);
+        }
+
+        ret_inv.inventories.push_back(tmp_cats);
+    }
+
+    return ret_inv;
+}
+
+static std::string str_json_inventory = "{\"cursor\":0,\"inventories\":[{\"categories\":[{\"cursor\":0,\"name\":\"misc\",\"header\":\"ITEM_NUT\",\"slots\":[\"SLOT_NUT\",\"SLOT_BOMB\",\"SLOT_BOMBCHU\"]},{\"cursor\":0,\"name\":\"ranged\",\"header\":\"ITEM_HOOKSHOT\",\"slots\":[\"SLOT_HOOKSHOT\",\"SLOT_LENS\",\"SLOT_HAMMER\"]},{\"cursor\":0,\"name\":\"boots\",\"header\":\"ITEM_BOOTS_IRON\",\"slots\":[\"SLOT_BOOTS_KOKIRI\",\"SLOT_BOOTS_IRON\",\"SLOT_BOOTS_HOVER\"]}]},{\"categories\":[{\"cursor\":0,\"name\":\"misc\",\"header\":\"SLOT_STICK\",\"slots\":[\"SLOT_STICK\",\"SLOT_NUT\",\"SLOT_BOMB\",\"SLOT_BOMBCHU\"]},{\"cursor\":0,\"name\":\"ranged\",\"header\":\"ITEM_BOOMERANG\",\"slots\":[\"SLOT_BOOMERANG\",\"SLOT_LENS\"]},{\"cursor\":0,\"name\":\"boots\",\"header\":\"ITEM_BOOTS_KOKIRI\",\"slots\":[\"SLOT_BOOTS_KOKIRI\"]}]}]}";
+
+static auto inventory_filepath = Ship::Context::LocateFileAcrossAppDirs("quick_inventory.json", "soh");
+
+static json load_jsonInventory() {
+    if (!std::filesystem::exists(inventory_filepath)) {
+        saveDefaultInventoryJson();
+    }
+
+    inventory_filepath = Ship::Context::LocateFileAcrossAppDirs("quick_inventory.json", "soh");
+    if (!std::filesystem::exists(inventory_filepath)) {
+        return NULL; //TODO: throw error here
+    }
+
+    std::ifstream file;
+    file.open(inventory_filepath);
+
+    if (file.fail()) {
+        SPDLOG_INFO("gggnounc file failed to open{}", 0);
+        return NULL;
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+
+    std::string str_json = buffer.str();
+
+    file.close();
+
+    return json::parse(str_json);
+}
+
+static void saveDefaultInventoryJson() {
+    std::string f_path = Ship::Context::GetAppDirectoryPath() + "/quick_inventory.json";
+    std::ofstream file(f_path);
+    file << json::parse(str_json_inventory).dump(4);
+};
+
+
+static QuickInventory qi_inv = ParseInventoryJson(load_jsonInventory());
+
